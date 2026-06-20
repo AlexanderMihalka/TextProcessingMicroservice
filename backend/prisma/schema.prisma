@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  name      String
+  role      Role      @default(USER)
+  isBlocked Boolean   @default(false)
+  createdAt DateTime  @default(now()) @map("created_at")
+  requests  Request[]
+
+  @@map("users")
+}
+
+model Request {
+  id            Int       @id @default(autoincrement())
+  userId        Int       @map("user_id")
+  operationType String    @map("operation_type")
+  sourceText    String    @map("source_text")
+  resultText    String    @map("result_text")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("requests")
+}
+
+model Log {
+  id        Int      @id @default(autoincrement())
+  level     String
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("logs")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
