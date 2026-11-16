@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Navbar from '../../components/Navbar';
 import { adminApi } from '../../services/api';
+import { useI18n } from '../../lib/i18n';
+
+const OP_KEYS = ['transliteration', 'translation', 'normalization'];
 
 export default function Admin() {
   const router = useRouter();
+  const { t, formatDateTime } = useI18n();
   const [tab, setTab] = useState('stats');
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
@@ -40,15 +44,15 @@ export default function Admin() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Видалити користувача?')) return;
+    if (!confirm(t('admin.confirmDelete'))) return;
     await adminApi.deleteUser(id);
     loadData();
   };
 
   const handleClearHistory = async () => {
-    if (!confirm('Очистити всю історію?')) return;
+    if (!confirm(t('admin.confirmClear'))) return;
     await adminApi.clearHistory();
-    alert('Історію очищено');
+    alert(t('admin.cleared'));
   };
 
   return (
@@ -56,23 +60,23 @@ export default function Admin() {
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Адмін панель</h1>
+          <h1 className="text-3xl font-bold text-gray-800">{t('admin.title')}</h1>
           <button onClick={handleClearHistory} className="text-sm text-red-500 border border-red-300 px-3 py-1 rounded hover:bg-red-50">
-            Очистити історію
+            {t('admin.clearHistory')}
           </button>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
-          {[['stats', '📊 Статистика'], ['users', '👥 Користувачі'], ['logs', '📋 Логи']].map(([id, label]) => (
+          {[['stats', 'admin.tabStats'], ['users', 'admin.tabUsers'], ['logs', 'admin.tabLogs']].map(([id, labelKey]) => (
             <button key={id} onClick={() => setTab(id)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tab === id ? 'bg-blue-600 text-white' : 'bg-white border hover:border-blue-400'}`}>
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>
 
-        {loading && <div className="text-center py-12 text-gray-400">Завантаження...</div>}
+        {loading && <div className="text-center py-12 text-gray-400">{t('common.loading')}</div>}
 
         {/* Stats */}
         {!loading && tab === 'stats' && stats && (
@@ -80,22 +84,22 @@ export default function Admin() {
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-white rounded-xl shadow-sm p-6 text-center">
                 <p className="text-4xl font-bold text-blue-600">{stats.totalUsers}</p>
-                <p className="text-gray-500 mt-1">Користувачів</p>
+                <p className="text-gray-500 mt-1">{t('admin.statUsers')}</p>
               </div>
               <div className="bg-white rounded-xl shadow-sm p-6 text-center">
                 <p className="text-4xl font-bold text-green-600">{stats.totalRequests}</p>
-                <p className="text-gray-500 mt-1">Запитів</p>
+                <p className="text-gray-500 mt-1">{t('admin.statRequests')}</p>
               </div>
               <div className="bg-white rounded-xl shadow-sm p-6 text-center">
                 <p className="text-4xl font-bold text-purple-600">{stats.recentErrors?.length || 0}</p>
-                <p className="text-gray-500 mt-1">Нещодавніх помилок</p>
+                <p className="text-gray-500 mt-1">{t('admin.statErrors')}</p>
               </div>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-semibold mb-4">Операції</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('admin.operations')}</h2>
               {Object.entries(stats.operationStats || {}).map(([op, count]) => (
                 <div key={op} className="flex justify-between py-2 border-b last:border-0">
-                  <span className="text-gray-600 capitalize">{op}</span>
+                  <span className="text-gray-600">{OP_KEYS.includes(op) ? t(`op.${op}`) : op}</span>
                   <span className="font-medium">{count}</span>
                 </div>
               ))}
@@ -109,8 +113,8 @@ export default function Admin() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  {['ID', "Ім'я", 'Email', 'Роль', 'Статус', 'Дії'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 font-medium text-gray-600">{h}</th>
+                  {['admin.colId', 'admin.colName', 'admin.colEmail', 'admin.colRole', 'admin.colStatus', 'admin.colActions'].map(key => (
+                    <th key={key} className="text-left px-4 py-3 font-medium text-gray-600">{t(key)}</th>
                   ))}
                 </tr>
               </thead>
@@ -127,7 +131,7 @@ export default function Admin() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs ${u.isBlocked ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                        {u.isBlocked ? 'Заблоковано' : 'Активний'}
+                        {u.isBlocked ? t('admin.blocked') : t('admin.active')}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -135,11 +139,11 @@ export default function Admin() {
                         <div className="flex gap-2">
                           <button onClick={() => handleToggleBlock(u.id)}
                             className="text-xs text-blue-600 hover:underline">
-                            {u.isBlocked ? 'Розблокувати' : 'Заблокувати'}
+                            {u.isBlocked ? t('admin.unblock') : t('admin.block')}
                           </button>
                           <button onClick={() => handleDelete(u.id)}
                             className="text-xs text-red-500 hover:underline">
-                            Видалити
+                            {t('admin.delete')}
                           </button>
                         </div>
                       )}
@@ -165,11 +169,11 @@ export default function Admin() {
                   </span>
                   <span className="text-sm text-gray-700 flex-1">{log.message}</span>
                   <span className="text-xs text-gray-400 whitespace-nowrap">
-                    {new Date(log.createdAt).toLocaleString('uk-UA')}
+                    {formatDateTime(log.createdAt)}
                   </span>
                 </div>
               ))}
-              {logs.length === 0 && <div className="text-center py-12 text-gray-400">Логів немає</div>}
+              {logs.length === 0 && <div className="text-center py-12 text-gray-400">{t('admin.noLogs')}</div>}
             </div>
           </div>
         )}

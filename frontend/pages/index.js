@@ -2,18 +2,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar';
 import { textApi } from '../services/api';
+import { useI18n } from '../lib/i18n';
 
-const TABS = [
-  { id: 'transliterate', label: '🔤 Транслітерація' },
-  { id: 'translate', label: '🌍 Переклад' },
-  { id: 'normalize', label: '✨ Нормалізація' },
-  { id: 'detect', label: '🔍 Визначення мови' },
-];
-
-const LANG_LABELS = { uk: 'Українська', en: 'Англійська', pl: 'Польська', de: 'Німецька', fr: 'Французька' };
+const TABS = ['transliterate', 'translate', 'normalize', 'detect'];
+const LANG_CODES = ['uk', 'en', 'pl', 'de', 'fr'];
+const NORM_KEYS = ['lowercase', 'removeHtmlTags', 'trimWhitespace', 'removeSpecial'];
 
 export default function Home() {
   const router = useRouter();
+  const { t, tError } = useI18n();
   const [tab, setTab] = useState('transliterate');
   const [text, setText] = useState('');
   const [result, setResult] = useState('');
@@ -30,7 +27,7 @@ export default function Home() {
   }, []);
 
   const process = async () => {
-    if (!text.trim()) return setError('Введіть текст');
+    if (!text.trim()) return setError(t('home.enterText'));
     setLoading(true);
     setError('');
     setResult('');
@@ -42,10 +39,13 @@ export default function Home() {
       else if (tab === 'detect') res = await textApi.detect(text);
 
       const d = res.data;
-      if (tab === 'detect') setResult(`Мова: ${LANG_LABELS[d.language] || d.language} (${d.language})`);
+      if (tab === 'detect') {
+        const name = LANG_CODES.includes(d.language) ? t(`lang.${d.language}`) : d.language;
+        setResult(t('home.detected', { name, code: d.language }));
+      }
       else setResult(d.result);
     } catch (err) {
-      setError(err.response?.data?.error || 'Помилка обробки');
+      setError(tError(err, 'home.error'));
     } finally {
       setLoading(false);
     }
@@ -55,15 +55,15 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Обробка тексту</h1>
-        <p className="text-gray-500 mb-6">Транслітерація, переклад та нормалізація текстових даних</p>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">{t('home.title')}</h1>
+        <p className="text-gray-500 mb-6">{t('home.subtitle')}</p>
 
         {/* Tabs */}
         <div className="flex gap-2 flex-wrap mb-6">
-          {TABS.map((t) => (
-            <button key={t.id} onClick={() => { setTab(t.id); setResult(''); setError(''); }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tab === t.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border hover:border-blue-400'}`}>
-              {t.label}
+          {TABS.map((id) => (
+            <button key={id} onClick={() => { setTab(id); setResult(''); setError(''); }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tab === id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border hover:border-blue-400'}`}>
+              {t(`tab.${id}`)}
             </button>
           ))}
         </div>
@@ -74,11 +74,11 @@ export default function Home() {
             <div className="flex gap-3">
               <button onClick={() => setDirection('uk-lat')}
                 className={`px-4 py-2 rounded-lg text-sm ${direction === 'uk-lat' ? 'bg-blue-600 text-white' : 'border hover:border-blue-400'}`}>
-                Укр → Лат
+                {t('home.dirUkLat')}
               </button>
               <button onClick={() => setDirection('lat-uk')}
                 className={`px-4 py-2 rounded-lg text-sm ${direction === 'lat-uk' ? 'bg-blue-600 text-white' : 'border hover:border-blue-400'}`}>
-                Лат → Укр
+                {t('home.dirLatUk')}
               </button>
             </div>
           )}
@@ -86,18 +86,18 @@ export default function Home() {
           {tab === 'translate' && (
             <div className="flex gap-3 flex-wrap">
               <div>
-                <label className="text-xs text-gray-500 block mb-1">З мови</label>
+                <label className="text-xs text-gray-500 block mb-1">{t('home.from')}</label>
                 <select value={sourceLang} onChange={(e) => setSourceLang(e.target.value)}
                   className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-                  <option value="auto">Авто</option>
-                  {Object.entries(LANG_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  <option value="auto">{t('home.auto')}</option>
+                  {LANG_CODES.map((code) => <option key={code} value={code}>{t(`lang.${code}`)}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-500 block mb-1">На мову</label>
+                <label className="text-xs text-gray-500 block mb-1">{t('home.to')}</label>
                 <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}
                   className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-                  {Object.entries(LANG_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  {LANG_CODES.map((code) => <option key={code} value={code}>{t(`lang.${code}`)}</option>)}
                 </select>
               </div>
             </div>
@@ -105,12 +105,12 @@ export default function Home() {
 
           {tab === 'normalize' && (
             <div className="flex flex-wrap gap-3">
-              {Object.entries({ lowercase: 'Нижній регістр', removeHtmlTags: 'Видалити HTML', trimWhitespace: 'Пробіли', removeSpecial: 'Спецсимволи' }).map(([key, label]) => (
+              {NORM_KEYS.map((key) => (
                 <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={normOptions[key]}
                     onChange={(e) => setNormOptions({ ...normOptions, [key]: e.target.checked })}
                     className="rounded" />
-                  {label}
+                  {t(`norm.${key}`)}
                 </label>
               ))}
             </div>
@@ -118,9 +118,9 @@ export default function Home() {
 
           {/* Input */}
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Вхідний текст</label>
+            <label className="block text-sm text-gray-600 mb-1">{t('home.input')}</label>
             <textarea value={text} onChange={(e) => setText(e.target.value)}
-              rows={5} placeholder="Введіть текст для обробки..."
+              rows={5} placeholder={t('home.placeholder')}
               className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
           </div>
 
@@ -128,19 +128,19 @@ export default function Home() {
 
           <button onClick={process} disabled={loading}
             className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
-            {loading ? 'Обробка...' : 'Обробити'}
+            {loading ? t('home.processing') : t('home.process')}
           </button>
 
           {/* Result */}
           {result && (
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Результат</label>
+              <label className="block text-sm text-gray-600 mb-1">{t('home.result')}</label>
               <div className="bg-gray-50 border rounded-lg p-4 text-gray-800 whitespace-pre-wrap break-words">
                 {result}
               </div>
               <button onClick={() => navigator.clipboard.writeText(result)}
                 className="mt-2 text-xs text-blue-600 hover:underline">
-                Копіювати
+                {t('home.copy')}
               </button>
             </div>
           )}

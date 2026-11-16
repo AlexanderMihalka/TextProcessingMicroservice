@@ -11,11 +11,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Redirect to login on 401
+// Redirect to login on 401 (expired or invalid token).
+// Login and register requests are skipped: a 401 there means "wrong email or password",
+// and the page has to stay put to show that message.
+const isAuthForm = (url = '') => url.startsWith('/auth/login') || url.startsWith('/auth/register');
+
 api.interceptors.response.use(
   (res) => res,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
+    if (error.response?.status === 401 && !isAuthForm(error.config?.url) && typeof window !== 'undefined') {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
