@@ -1,6 +1,5 @@
 # Text Transliteration, Translation and Normalization Microservice
 
-🇬🇧 English · 🇺🇦 [Українська](README.uk.md)
 
 Coursework for the discipline "Development of Internet Computer Systems and Services".
 
