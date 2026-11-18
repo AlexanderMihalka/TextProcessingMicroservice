@@ -1,8 +1,6 @@
 # Text Transliteration, Translation and Normalization Microservice
 
 
-Coursework for the discipline "Development of Internet Computer Systems and Services".
-
 A web service that transliterates Ukrainian text to Latin (and back), translates text between five languages, normalizes text, and detects its language. It has a REST API with JWT authentication, a Next.js interface available in Ukrainian and English, a request history, and an admin panel.
 
 ![Text processing](docs/screenshots/transliteration.png)
